@@ -106,6 +106,13 @@ android {
     }
 }
 
+// Dependency validation: the shipped runtime classpaths are locked (app/gradle.lockfile).
+// Any unexpected dependency/version change fails the build until the lockfile is updated
+// deliberately with: ./gradlew :app:dependencies --write-locks
+configurations.matching { it.name == "debugRuntimeClasspath" || it.name == "releaseRuntimeClasspath" }.configureEach {
+    resolutionStrategy.activateDependencyLocking()
+}
+
 ksp {
     arg("room.generateKotlin", "true")
 }
@@ -145,4 +152,15 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlinx.serialization.json)
+}
+
+// Resolves the locked runtime classpaths; fails when they drift from app/gradle.lockfile.
+tasks.register("verifyDependencyLocks") {
+    group = "verification"
+    description = "Fails if runtime dependencies differ from app/gradle.lockfile."
+    val locked = listOf("debugRuntimeClasspath", "releaseRuntimeClasspath").map { configurations.getByName(it) }
+    doLast {
+        locked.forEach { it.resolve() }
+        println("Dependency locks verified for ${locked.joinToString { it.name }}")
+    }
 }

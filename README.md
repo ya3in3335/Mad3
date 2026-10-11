@@ -1,13 +1,24 @@
 # SAMTEX — Smart NFC & eID Reader
 
-SAMTEX is an offline Android application for inspecting NFC smart cards — with a focus on
-ISO/IEC 14443-4 (ISO-DEP) cards such as the Algerian electronic identity card — using only the
-public Android NFC APIs and documented, read-only ISO/IEC 7816-4 commands.
+SAMTEX is an offline, privacy-first Android application that reads NFC smart cards, with a focus
+on the **Algerian biometric national identity card (CNIBE)**, using public Android NFC APIs and
+published standards only (ISO/IEC 14443, ISO/IEC 7816-4, ICAO Doc 9303).
 
-> **SAMTEX does not read protected personal data.** Names, photographs, fingerprints, addresses
-> and identification numbers on government-issued cards are protected by access-control protocols
-> (BAC / PACE / EAC) that require credentials or official authorization. SAMTEX reports this data as
-> *restricted* and never attempts to access it.
+It has two levels:
+
+1. **Technical diagnostics** (no access data needed): technologies, ATQA/SAK or ATQB, historical
+   bytes / higher-layer response, EF.DIR, EF.CardAccess, ICAO application presence.
+2. **Identity reading with the holder's own access data**: the card number, date of birth and expiry
+   date (or a CAN) unlock the ICAO LDS1 application through **PACE or BAC** (ICAO Doc 9303 Part 11).
+   SAMTEX then reads DG1/DG11/DG12 (and DG2 on request) and checks them with **passive
+   authentication**.
+
+> **Limits.** Fingerprints (DG3), iris (DG4) and data held in non-public national applications
+> (for example spouse name or e-address, which the official ministry reader obtains through its
+> proprietary *DzaEidCard* module) are **not** accessed. No authentication bypass, PIN guessing
+> or downgrade is ever attempted. See [docs/CNIBE_COMPATIBILITY.md](docs/CNIBE_COMPATIBILITY.md):
+> **identity reading has so far been validated only against a simulated chip with synthetic data.
+> It has not been verified on a physical CNIBE.**
 
 ---
 
@@ -24,15 +35,28 @@ public Android NFC APIs and documented, read-only ISO/IEC 7816-4 commands.
   response parsing, status-word interpreter, BER-TLV parser, ATS / historical-byte analyzers.
 - **Card classifier** with *Verified / Inferred / Restricted* provenance on every value.
 - **Algerian eID signature detection** (`AlgeriaEIDv2` in the historical bytes).
-- **Public standard probe** (can be disabled): reads only ICAO Doc 9303 objects that are
-  public by design — EF.CardAccess (supported security protocols, e.g. PACE) and the presence
-  of the eMRTD application.
+- **Type A and Type B**: ATQB protocol info is decoded and eID signatures are detected in the Type B
+  higher-layer response as well as in Type A historical bytes.
+- **Public standard probe** (can be disabled): EF.DIR (application directory, no AID guessing),
+  EF.CardAccess (supported PACE configurations) and ICAO LDS1 application presence.
+- **Secure access (JMRTD 0.8.8)**: PACE (MRZ or CAN; GM/IM/CAM as supported by JMRTD) when the card
+  advertises it, otherwise BAC. A PACE authentication failure is never retried with BAC.
+- **Identity data**: MRZ (TD1/TD2/TD3 with check digits), DG11 (incl. names in national characters
+  such as Arabic), DG12, optional DG2 portrait. Proprietary DG13 is reported but not decoded.
+- **Passive authentication**: data-group hashes vs. EF.SOD, CMS signature with the Document Signer
+  certificate, and chain to a **user-imported** CSCA certificate. Authenticity is reported as
+  *established* only when all three pass; otherwise *not established* or *failed*.
+- **Explicit outcome categories** with Arabic explanations: `NFC_NOT_AVAILABLE`, `NFC_DISABLED`,
+  `CARD_REMOVED`, `ISO_DEP_UNAVAILABLE`, `APPLICATION_NOT_FOUND`, `PROTOCOL_UNSUPPORTED`,
+  `ACCESS_CREDENTIALS_REQUIRED`, `AUTHENTICATION_FAILED`, `ACCESS_DENIED`, `FILE_NOT_FOUND`,
+  `DATA_FORMAT_UNSUPPORTED`, `VERIFICATION_UNAVAILABLE`, `READING_SUCCESSFUL`.
 - **APDU diagnostics console** limited to an allowlist of documented read-only commands, plus an
   offline response decoder.
 - **Report export** (JSON / TXT) through the Storage Access Framework, identifiers redacted by
   default.
-- **Optional scan history** (explicit opt-in) encrypted with an Android Keystore AES-GCM key.
-- **English, Arabic (RTL) and French** interface.
+- **Optional technical scan history** (explicit opt-in) encrypted with an Android Keystore AES-GCM
+  key. Identity data is never stored.
+- **Arabic (default, RTL), French and English** interface. Dark navy / electric-blue design.
 - **100 % offline**: no `INTERNET` permission, no analytics, no ads, no accounts.
 
 ## Screenshots
@@ -70,9 +94,16 @@ com.samtex.eidreader
 │   ├── protocol/            CardProtocolAdapter + ICAO 9303 public adapters
 │   ├── tag/                 TagSnapshot + TagSnapshotReader
 │   └── error/               ErrorKind, NfcEngineException, NfcErrorHandler
+├── icao/                    ICAO Doc 9303 identity reading
+│   ├── access/              AccessCredentials (wipeable, never persisted)
+│   ├── mrz/                 MrzParser, MrzCheckDigit
+│   ├── lds/                 EF.COM, DG1, DG2, DG11, DG12 parsers
+│   ├── pa/                  PassiveAuthenticator, TrustAnchorProvider, CertificateParser
+│   └── reader/              IcaoDocumentReader (PACE/BAC via JMRTD), TransportCardService
 ├── security/                InputValidator, PrivacyManager, SecureStorage (Keystore)
 ├── diagnostics/             SessionLogger, ReportGenerator, ErrorAnalyzer, Json
-└── data/                    ScanController, SettingsRepository, Room history
+└── data/                    ScanController (scan + identity sessions), SettingsRepository,
+                             Room history, TrustAnchorStore
 ```
 
 Scan pipeline (`ScanCardUseCase`):
@@ -85,8 +116,17 @@ Scan pipeline (`ScanCardUseCase`):
    the metadata already collected.
 4. **Classification** – `CardClassifier` combines snapshot + probe results with provenance.
 
-New, officially documented and user-authorized access methods can be added as additional
-`CardProtocolAdapter` implementations without touching transport or UI code.
+Identity pipeline (`IcaoDocumentReader`):
+
+1. EF.CardAccess (public) → which PACE configurations the card supports.
+2. PACE (CAN if supplied, else MRZ key) or BAC. JMRTD drives the protocol through
+   `TransportCardService`, so the same session guard, timeouts and error translation apply.
+3. EF.COM, EF.SOD, DG1, DG11, DG12 (DG2 only if requested). DG3/DG4 are never requested.
+4. Passive authentication over exactly the bytes read. Raw buffers are then zeroed.
+5. Result with explicit outcome, trust levels and a technical report free of personal data.
+
+The decision logic lives in `IcaoDocumentReader.authenticate()`, and the reasoning is documented
+in [docs/CNIBE_COMPATIBILITY.md](docs/CNIBE_COMPATIBILITY.md).
 
 ## Requirements
 
@@ -96,6 +136,7 @@ New, officially documented and user-authorized access methods can be added as ad
 ## Build instructions
 
 ```bash
+./gradlew verifyDependencyLocks  # dependency lock validation
 ./gradlew testDebugUnitTest   # unit tests
 ./gradlew lintDebug           # Android Lint
 ./gradlew assembleDebug       # → app/build/outputs/apk/debug/SAMTEX-debug.apk
@@ -113,15 +154,18 @@ No signing material is committed to the repository.
 
 `.github/workflows/android-build.yml` runs on every push and on manual dispatch:
 
-1. Sets up JDK 17, the Android SDK and Gradle caching.
-2. Runs unit tests and Android Lint.
-3. Builds the debug APK, verifies it exists and computes its SHA-256.
-4. Uploads **`SAMTEX-Android-APK`** (`SAMTEX-debug.apk` + `.sha256`) and the test/lint reports.
-5. Writes a summary (status, size, checksum) to the run page.
+1. **Gradle wrapper validation** (checksum of `gradle-wrapper.jar`).
+2. **Dependency validation**: `verifyDependencyLocks` fails if the runtime classpaths differ from
+   `app/gradle.lockfile` (update deliberately with `./gradlew :app:dependencies --write-locks`).
+3. **Kotlin compilation**, **unit tests**, **Android Lint**.
+4. **Debug APK** build, existence check and SHA-256. Uploads **`SAMTEX-Android-APK`** plus test/lint reports.
+5. **Dependency vulnerability scan**: OSV-Scanner (pinned v2.6.0, checksum-verified) over the lockfile, in a separate job.
+6. **Failure reporting**: a table of failed stages and per-test annotations in the run summary.
 
 To download the APK: *Actions → Android Build → latest run → Artifacts → SAMTEX-Android-APK*.
 
 The debug APK is signed with the standard Android debug key and is **not a production release**.
+A green build does not mean SAMTEX is production-ready or verified on physical cards.
 A separate `release` job builds a signed release APK only if these repository secrets exist:
 `SAMTEX_KEYSTORE_BASE64`, `SAMTEX_KEYSTORE_PASSWORD`, `SAMTEX_KEY_ALIAS`, `SAMTEX_KEY_PASSWORD`.
 
@@ -148,16 +192,23 @@ A separate `release` job builds a signed release APK only if these repository se
 | Area | Measure |
 |---|---|
 | Network | No `INTERNET`/`ACCESS_NETWORK_STATE` permission (explicitly removed from the merged manifest). No telemetry. |
-| Card access | Only SELECT / READ BINARY / READ RECORD / GET DATA / GET RESPONSE; VERIFY, authentication, key management, secure messaging and write/lifecycle commands are refused by `ApduPolicy`. No PIN attempts, no brute force, no enumeration. |
+| Card access | The free-form diagnostics console only allows SELECT / READ BINARY / READ RECORD / GET DATA / GET RESPONSE (`ApduPolicy`). BAC/PACE is performed only by the identity reader with data the holder enters, at most one authentication attempt per read, never a PIN, never a downgrade from PACE to BAC after an authentication failure. |
+| Identity data | Held only in memory for the session. Hidden until the holder taps "Show my data". Never logged, stored, exported or transmitted. Wiped on "End session", on cancel and when the app leaves the foreground. Screenshots and recents thumbnails blocked (`FLAG_SECURE`). |
+| Access data | Kept in `CharArray`s and wiped after the attempt. Unused credentials expire after 2 minutes. (JMRTD's key classes take `String`s, which cannot be wiped.) |
+| Trust anchors | No built-in or downloaded CSCA. Users import certificates from an official source. Without one, authenticity is never claimed. |
 | Identifiers | Tag IDs redacted by default on screen, in logs, history and reports; copying marks the clip as sensitive. |
-| Logs | Per-session in-memory logs; response data from non-public objects is reduced to its length. Nothing is written to Logcat. |
+| Logs | Per-session in-memory logs. Response data from non-public objects is reduced to its length. Identity reads log only INS + status word. JMRTD/SCUBA `java.util.logging` is disabled. Nothing is written to Logcat. |
 | Storage | History is opt-in, stores redacted reports encrypted with AES-256-GCM (Android Keystore). Revoking consent deletes history and the key. Backups/device transfer are disabled. |
 | Export | Storage Access Framework (user picks destination). Unredacted identifiers require an explicit checkbox **and** a confirmation dialog. |
 
 ## Known limitations
 
-- Protected identity data (DG1 MRZ, DG2 photo, DG3 fingerprints, addresses, numbers) is **not read**:
-  it requires BAC/PACE with credentials printed on the card, or official terminal authorization.
+- **Not yet verified on a physical CNIBE** (see the compatibility report).
+- Data outside the documented ICAO files (spouse name, e-address, civil status, health, etc.) is held
+  in non-public national applications and is not read. Fingerprints/iris require EAC and are not read.
+- JPEG 2000 portraits cannot be displayed (Android has no decoder). JPEG portraits are supported.
+- Active Authentication / Chip Authentication (clone detection) are not implemented.
+- Passive authentication needs a CSCA certificate imported by the user.
 - The full ATS is not available through Android APIs.
 - MIFARE Classic sectors, DESFire applications and other keyed content are not read.
 - Technical explanations generated by the engine are in English; the interface is localized
@@ -170,13 +221,18 @@ A separate `release` job builds a signed release APK only if these repository se
 ./gradlew testDebugUnitTest
 ```
 
-The JVM test suite covers hex encoding/decoding, ATS and historical-byte parsing, APDU
+The JVM test suite (130+ tests) covers hex encoding/decoding, ATS and historical-byte parsing, APDU
 construction and parsing (all cases), status-word interpretation, invalid input, empty and
 truncated responses, unexpected response lengths, GET RESPONSE / wrong-Le handling, connection
 interruptions, timeouts, concurrent-session rejection, session lifecycle, EF.CardAccess decoding,
-the authorization policy, report generation/redaction and classifier accuracy.
+the authorization policy, report generation/redaction and classifier accuracy. It also covers
+MRZ parsing (ICAO TD1/TD3 specimens), the ICAO Doc 9303 Appendix D BAC key-derivation vector, LDS
+decoding, passive authentication (valid, tampered, untrusted, wrong CSCA) and **end-to-end BAC,
+PACE-MRZ and PACE-CAN reads** through JMRTD's real client against `SimulatedEmrtdChip`. That test chip
+implements the chip side of BAC, PACE ECDH-GM (brainpoolP256r1, AES-128) and secure messaging. All
+documents and certificates in the tests are synthetic. No real citizen data is in the repository.
 
-Tests run against `SimulatedTransport` and `VirtualIsoCard` (in `app/src/test/.../testing`).
+Tests run against `SimulatedTransport`, `VirtualIsoCard` and `SimulatedEmrtdChip` (in `app/src/test/.../testing`).
 **These are simulations**: they validate SAMTEX's logic, not its compatibility with any physical
 card. Real-device validation checklist:
 
