@@ -29,6 +29,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default ("tools") no longer exists in the SDK repository.
+          packages: "platform-tools platforms;android-35 build-tools;34.0.0"
 
       - name: Set up Gradle (with dependency caching)
         uses: gradle/actions/setup-gradle@v4
@@ -130,6 +133,9 @@ jobs:
       - name: Set up Android SDK
         if: env.HAS_SIGNING == 'true'
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default ("tools") no longer exists in the SDK repository.
+          packages: "platform-tools platforms;android-35 build-tools;34.0.0"
 
       - name: Set up Gradle
         if: env.HAS_SIGNING == 'true'
