@@ -3,6 +3,8 @@ package com.samtex.eidreader.nfc.classifier
 import com.samtex.eidreader.core.util.Hex
 import com.samtex.eidreader.nfc.ats.AtqaInfo
 import com.samtex.eidreader.nfc.ats.AtqaSakDecoder
+import com.samtex.eidreader.nfc.ats.AtqbDecoder
+import com.samtex.eidreader.nfc.ats.AtqbInfo
 import com.samtex.eidreader.nfc.ats.HistoricalBytesFormat
 import com.samtex.eidreader.nfc.ats.HistoricalBytesInfo
 import com.samtex.eidreader.nfc.ats.HistoricalBytesParser
@@ -37,6 +39,7 @@ data class CardClassification(
     val manufacturer: Finding,
     val atqa: AtqaInfo?,
     val sak: SakInfo?,
+    val atqb: AtqbInfo?,
     val historicalBytes: HistoricalBytesInfo,
     val signature: CardSignature?,
     val findings: List<Finding>,
@@ -54,7 +57,10 @@ class CardClassifier @Inject constructor() {
         val sak = snapshot.nfcA?.let { AtqaSakDecoder.decodeSak(it.sak) }
         val isoDep = snapshot.has(NfcTechnology.ISO_DEP)
         val historical = HistoricalBytesParser.parse(snapshot.isoDep?.historicalBytes)
+        val atqb = snapshot.nfcB?.let { AtqbDecoder.decode(it.applicationData, it.protocolInfo) }
+        // Type A exposes ATS historical bytes; Type B exposes the ATTRIB higher-layer response instead.
         val signature = EidSignatureDetector.detect(snapshot.isoDep?.historicalBytes)
+            ?: EidSignatureDetector.detect(snapshot.isoDep?.hiLayerResponse)
         val emrtdPresent = probes.any { it.adapterId == "icao.emrtd" && it.status == ProbeStatus.AVAILABLE }
         val paceAdvertised = probes.any { p -> p.adapterId == "icao.cardaccess" && p.status == ProbeStatus.AVAILABLE && p.findings.any { it.label == "PACE" } }
 
@@ -92,7 +98,7 @@ class CardClassifier @Inject constructor() {
         }
 
         val manufacturer = manufacturerFinding(snapshot, atqa)
-        val findings = buildFindings(snapshot, atqa, sak, historical, signature, manufacturer)
+        val findings = buildFindings(snapshot, atqa, sak, atqb, historical, signature, manufacturer)
 
         return CardClassification(
             family = family,
@@ -104,6 +110,7 @@ class CardClassifier @Inject constructor() {
             manufacturer = manufacturer,
             atqa = atqa,
             sak = sak,
+            atqb = atqb,
             historicalBytes = historical,
             signature = signature,
             findings = findings,
@@ -132,6 +139,12 @@ class CardClassifier @Inject constructor() {
                 )
             }
         }
+        if (snapshot.has(NfcTechnology.NFC_B)) {
+            return Finding(
+                "manufacturer", "Manufacturer", "Not identifiable", Provenance.VERIFIED,
+                "Type B cards report a PUPI (pseudo-unique identifier), which carries no manufacturer code (ISO/IEC 14443-3).",
+            )
+        }
         if (snapshot.has(NfcTechnology.NFC_V)) {
             val uid = snapshot.uid
             // ISO/IEC 15693 UID (LSB first in Android): MSB = E0, next byte = manufacturer code.
@@ -151,6 +164,7 @@ class CardClassifier @Inject constructor() {
         snapshot: TagSnapshot,
         atqa: AtqaInfo?,
         sak: SakInfo?,
+        atqb: AtqbInfo?,
         historical: HistoricalBytesInfo,
         signature: CardSignature?,
         manufacturer: Finding,
@@ -166,8 +180,11 @@ class CardClassifier @Inject constructor() {
             add(
                 Finding(
                     "uid", "Tag identifier", "${uid.size} bytes", Provenance.VERIFIED,
-                    if (uid.size == 4 && uid[0] == 0x08) "Random UID: changes at every activation, not a stable identifier." else
-                        "Anticollision identifier reported by Android.",
+                    when {
+                        snapshot.has(NfcTechnology.NFC_B) -> "PUPI (Type B pseudo-unique identifier); often random per activation."
+                        uid.size == 4 && uid[0] == 0x08 -> "Random UID: changes at every activation, not a stable identifier."
+                        else -> "Anticollision identifier reported by Android."
+                    },
                     uid.hex(),
                 ),
             )
@@ -240,7 +257,8 @@ class CardClassifier @Inject constructor() {
             add(
                 Finding(
                     "signature", "Detected signature", signature.text, Provenance.VERIFIED,
-                    "ASCII text present in the ATS historical bytes.", signature.hex,
+                    if (snapshot.isoDep?.historicalBytes != null) "ASCII text present in the ATS historical bytes." else "ASCII text present in the Type B higher-layer response.",
+                    signature.hex,
                 ),
             )
             add(
@@ -251,8 +269,24 @@ class CardClassifier @Inject constructor() {
             )
         }
         snapshot.nfcB?.let {
-            add(Finding("nfcb.appdata", "Application data (ATQB)", it.applicationData.hex(" "), Provenance.VERIFIED, null, it.applicationData.hex()))
+            add(Finding("nfcb.appdata", "Application data (ATQB)", it.applicationData.hex(" "), Provenance.VERIFIED, "Proprietary application data from the ATQB.", it.applicationData.hex()))
             add(Finding("nfcb.protocol", "Protocol info (ATQB)", it.protocolInfo.hex(" "), Provenance.VERIFIED, null, it.protocolInfo.hex()))
+        }
+        atqb?.let { b ->
+            add(
+                Finding(
+                    "atqb.decoded", "ATQB protocol",
+                    buildString {
+                        append(if (b.iso14443_4Compliant) "ISO/IEC 14443-4 compliant" else "not ISO/IEC 14443-4 compliant")
+                        b.maxFrameSize?.let { append("; max frame ").append(it).append(" bytes") }
+                        append("; FWI ").append(b.fwi)
+                        append("; CID ").append(if (b.cidSupported) "yes" else "no")
+                        append("; NAD ").append(if (b.nadSupported) "yes" else "no")
+                    },
+                    Provenance.VERIFIED,
+                    "Bit rates PICC→PCD ${b.supportedBitRatesPiccToPcd.joinToString("/")} kbit/s, PCD→PICC ${b.supportedBitRatesPcdToPicc.joinToString("/")} kbit/s.",
+                ),
+            )
         }
         snapshot.nfcF?.let {
             add(Finding("nfcf.pmm", "Manufacturer parameter (PMm)", it.manufacturer.hex(" "), Provenance.VERIFIED, null, it.manufacturer.hex()))

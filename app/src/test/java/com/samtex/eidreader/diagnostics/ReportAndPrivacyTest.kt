@@ -8,6 +8,7 @@ import com.samtex.eidreader.domain.usecase.ScanCardUseCase
 import com.samtex.eidreader.nfc.classifier.CardClassifier
 import com.samtex.eidreader.nfc.error.ErrorKind
 import com.samtex.eidreader.nfc.error.NfcEngineException
+import com.samtex.eidreader.nfc.protocol.EfDirAdapter
 import com.samtex.eidreader.nfc.protocol.IcaoCardAccessAdapter
 import com.samtex.eidreader.nfc.protocol.IcaoEmrtdApplicationAdapter
 import com.samtex.eidreader.nfc.protocol.ProtocolAdapterRegistry
@@ -41,7 +42,7 @@ class ReportAndPrivacyTest {
 
     private suspend fun scan() = ScanCardUseCase(
         IsoDepSessionManager(), IdentifyCardUseCase(CardClassifier()),
-        ProtocolAdapterRegistry(IcaoCardAccessAdapter(), IcaoEmrtdApplicationAdapter()),
+        ProtocolAdapterRegistry(EfDirAdapter(), IcaoCardAccessAdapter(), IcaoEmrtdApplicationAdapter()),
         TestDeps.errorAnalyzer, TestDeps.errorHandler, TestDeps.privacy, clock,
     ).execute(Fixtures.card(Fixtures.algeriaSnapshot, VirtualIsoCard().let { c -> SimulatedTransport { c.respond(it) } }), ScanOptions())
 
@@ -57,7 +58,7 @@ class ReportAndPrivacyTest {
         assertEquals("416C67657269614549447632", root["isoDep"]!!.jsonObject["historicalBytes"]!!.jsonPrimitive.content)
         assertEquals("AlgeriaEIDv2", root["signature"]!!.jsonObject["text"]!!.jsonPrimitive.content)
         assertEquals("false", root["isoDep"]!!.jsonObject["fullAtsExposed"]!!.jsonPrimitive.content)
-        assertEquals(2, root["protocols"]!!.jsonArray.size)
+        assertEquals(3, root["protocols"]!!.jsonArray.size)
         assertFalse(json.contains("08A1B2C3"))
         assertFalse(json.contains("A1 B2 C3"))
     }

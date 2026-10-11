@@ -10,9 +10,10 @@ class ProtocolAdapterRegistry(private val adapters: List<CardProtocolAdapter>) {
 
     @Inject
     constructor(
+        efDir: EfDirAdapter,
         cardAccess: IcaoCardAccessAdapter,
         emrtd: IcaoEmrtdApplicationAdapter,
-    ) : this(listOf(cardAccess, emrtd))
+    ) : this(listOf(efDir, cardAccess, emrtd))
 
     fun all(): List<CardProtocolAdapter> = adapters
 

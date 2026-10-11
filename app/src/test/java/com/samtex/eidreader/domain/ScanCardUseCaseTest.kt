@@ -10,6 +10,7 @@ import com.samtex.eidreader.nfc.classifier.CardClassifier
 import com.samtex.eidreader.nfc.classifier.CardFamily
 import com.samtex.eidreader.nfc.error.ErrorKind
 import com.samtex.eidreader.nfc.error.NfcEngineException
+import com.samtex.eidreader.nfc.protocol.EfDirAdapter
 import com.samtex.eidreader.nfc.protocol.IcaoCardAccessAdapter
 import com.samtex.eidreader.nfc.protocol.IcaoEmrtdApplicationAdapter
 import com.samtex.eidreader.nfc.protocol.ProbeStatus
@@ -37,7 +38,7 @@ class ScanCardUseCaseTest {
     private val useCase = ScanCardUseCase(
         sessionManager = sessionManager,
         identify = IdentifyCardUseCase(CardClassifier()),
-        adapters = ProtocolAdapterRegistry(IcaoCardAccessAdapter(), IcaoEmrtdApplicationAdapter()),
+        adapters = ProtocolAdapterRegistry(EfDirAdapter(), IcaoCardAccessAdapter(), IcaoEmrtdApplicationAdapter()),
         errorAnalyzer = TestDeps.errorAnalyzer,
         errorHandler = TestDeps.errorHandler,
         privacy = TestDeps.privacy,

@@ -30,6 +30,26 @@ object Fixtures {
         ),
     )
 
+    /**
+     * SYNTHETIC Type B ISO-DEP card modelled on what the current SAMTEX build reported for a CNIBE
+     * (NfcB + IsoDep). ATQB values are illustrative, not captured from a real card.
+     */
+    val typeBSnapshot = TagSnapshot(
+        uid = ByteString.fromHex("1A2B3C4D"),
+        technologies = listOf(NfcTechnology.NFC_B, NfcTechnology.ISO_DEP),
+        nfcB = com.samtex.eidreader.nfc.tag.NfcBInfo(
+            applicationData = ByteString.fromHex("00000000"),
+            protocolInfo = ByteString.fromHex("778185"),
+            maxTransceiveLength = 253,
+        ),
+        isoDep = IsoDepInfo(
+            historicalBytes = null,
+            hiLayerResponse = ByteString.fromHex(ALGERIA_HISTORICAL_HEX),
+            extendedLengthSupported = false,
+            maxTransceiveLength = 261,
+        ),
+    )
+
     val ultralightSnapshot = TagSnapshot(
         uid = ByteString.fromHex("04112233445566"),
         technologies = listOf(NfcTechnology.NFC_A, NfcTechnology.MIFARE_ULTRALIGHT),
