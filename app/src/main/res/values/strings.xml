@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">SAMTEX</string>
+    <string name="tagline">Smart NFC &amp; eID Reader</string>
+
+    <string name="nfc_status_enabled">NFC enabled</string>
+    <string name="nfc_status_disabled">NFC disabled</string>
+    <string name="nfc_status_unavailable">NFC not available</string>
+    <string name="instruction_hold">Hold your NFC card near the back of your phone.</string>
+    <string name="hint_nfc_disabled">Turn on NFC to start scanning.</string>
+    <string name="hint_nfc_unavailable">This device has no NFC controller.</string>
+    <string name="hint_keep_still">Keep the card still…</string>
+
+    <string name="phase_nfc_unavailable">NFC Unavailable</string>
+    <string name="phase_nfc_disabled">NFC Disabled</string>
+    <string name="phase_waiting">Waiting for Card</string>
+    <string name="phase_card_detected">Card Detected</string>
+    <string name="phase_connecting">Connecting</string>
+    <string name="phase_reading">Reading</string>
+    <string name="phase_completed">Completed</string>
+    <string name="phase_connection_lost">Connection Lost</string>
+    <string name="phase_error">Error</string>
+
+    <string name="action_open_nfc_settings">Open NFC settings</string>
+    <string name="action_scan_again">Scan Again</string>
+    <string name="action_technical_details">Technical Details</string>
+    <string name="action_export_report">Export Report</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_back">Back</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_copied">Copied</string>
+    <string name="action_reveal">Reveal</string>
+    <string name="action_hide">Hide</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_export">Export</string>
+    <string name="action_diagnostics">APDU Diagnostics</string>
+    <string name="action_close">Close</string>
+
+    <string name="results_title">Scan results</string>
+    <string name="field_card_type">Card type</string>
+    <string name="field_technology">NFC technology</string>
+    <string name="field_iso_standard">ISO standard</string>
+    <string name="field_manufacturer">Manufacturer</string>
+    <string name="field_tag_id">Tag identifier</string>
+    <string name="field_atqa">ATQA</string>
+    <string name="field_sak">SAK</string>
+    <string name="field_ats">ATS</string>
+    <string name="field_historical">Historical bytes</string>
+    <string name="field_isodep_status">ISO-DEP status</string>
+    <string name="field_accessible_info">Accessible information</string>
+    <string name="field_signature">Detected signature</string>
+    <string name="value_not_available">Not available</string>
+    <string name="value_ats_not_exposed">Not exposed by Android</string>
+
+    <string name="isodep_not_supported">Not supported by this tag</string>
+    <string name="isodep_established">Communication established</string>
+    <string name="isodep_failed">Communication failed</string>
+    <string name="isodep_lost">Connection lost during reading</string>
+
+    <string name="provenance_verified">Verified</string>
+    <string name="provenance_inferred">Inferred</string>
+    <string name="provenance_restricted">Restricted</string>
+
+    <string name="probe_available">Available</string>
+    <string name="probe_not_present">Not present</string>
+    <string name="probe_restricted">Access restricted</string>
+    <string name="probe_error">Error</string>
+    <string name="restricted_notice">Protected identity data (name, photo, fingerprints, address, ID numbers) requires official authorization and is not read by SAMTEX.</string>
+
+    <string name="details_title">Technical Details</string>
+    <string name="details_section_card">Card</string>
+    <string name="details_section_findings">Findings</string>
+    <string name="details_section_protocols">Public protocol probes</string>
+    <string name="details_section_log">Session log</string>
+    <string name="details_section_error">Error</string>
+    <string name="details_no_result">No scan result yet.</string>
+    <string name="details_hex">HEX</string>
+    <string name="details_ascii">ASCII</string>
+
+    <string name="export_title">Export report</string>
+    <string name="export_format">Format</string>
+    <string name="export_include_ids">Include unredacted tag identifiers</string>
+    <string name="export_ids_warning">Unredacted identifiers can be used to recognise this card. Only include them if you need them and trust the destination.</string>
+    <string name="export_success">Report exported</string>
+    <string name="export_failed">Export failed</string>
+
+    <string name="diag_title">APDU Diagnostics</string>
+    <string name="diag_intro">Only documented, read-only ISO/IEC 7816-4 commands can be sent. Authentication, PIN, secure messaging and write commands are blocked.</string>
+    <string name="diag_authorize">I own this card or am authorized to diagnose it</string>
+    <string name="diag_card_required">Tap a card first. The console uses the most recently detected card.</string>
+    <string name="diag_card_ready">Card ready: %1$s</string>
+    <string name="diag_operations">Documented operations</string>
+    <string name="diag_custom">Custom read-only APDU</string>
+    <string name="diag_custom_hint">e.g. 00 A4 04 0C 07 A0 00 00 02 47 10 01</string>
+    <string name="diag_send">Send</string>
+    <string name="diag_decoder">Offline response decoder</string>
+    <string name="diag_decoder_hint">Response hex incl. SW1 SW2, e.g. 6A 82</string>
+    <string name="diag_decode">Decode</string>
+    <string name="diag_output">Output</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_history_consent">Store scan history</string>
+    <string name="settings_history_consent_desc">Saves redacted technical reports, encrypted with a key held in the Android Keystore. Off by default.</string>
+    <string name="settings_history_dialog_title">Store scan history?</string>
+    <string name="settings_history_dialog_text">SAMTEX will save redacted technical reports of your scans on this device only, encrypted with the Android Keystore. You can delete them at any time. Turning this off deletes all history.</string>
+    <string name="settings_redact">Redact identifiers on screen</string>
+    <string name="settings_redact_desc">Hide tag identifiers unless you tap Reveal.</string>
+    <string name="settings_probe">Public standard probe</string>
+    <string name="settings_probe_desc">After detection, read only public ICAO 9303 objects (EF.CardAccess, eMRTD application presence).</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_en" translatable="false">English</string>
+    <string name="language_ar" translatable="false">العربية</string>
+    <string name="language_fr" translatable="false">Français</string>
+    <string name="settings_history">Scan history</string>
+    <string name="settings_history_empty">No stored scans.</string>
+    <string name="settings_history_clear">Delete all history</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_text">SAMTEX %1$s — offline NFC diagnostics. No internet permission, no analytics, no accounts.</string>
+    <string name="history_report_unavailable">This report can no longer be decrypted.</string>
+</resources>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagline">Lecteur NFC &amp; eID intelligent</string>
+
+    <string name="nfc_status_enabled">NFC activé</string>
+    <string name="nfc_status_disabled">NFC désactivé</string>
+    <string name="nfc_status_unavailable">NFC indisponible</string>
+    <string name="instruction_hold">Approchez votre carte NFC du dos de votre téléphone.</string>
+    <string name="hint_nfc_disabled">Activez le NFC pour commencer la lecture.</string>
+    <string name="hint_nfc_unavailable">Cet appareil ne possède pas de contrôleur NFC.</string>
+    <string name="hint_keep_still">Gardez la carte immobile…</string>
+
+    <string name="phase_nfc_unavailable">NFC indisponible</string>
+    <string name="phase_nfc_disabled">NFC désactivé</string>
+    <string name="phase_waiting">En attente de carte</string>
+    <string name="phase_card_detected">Carte détectée</string>
+    <string name="phase_connecting">Connexion</string>
+    <string name="phase_reading">Lecture</string>
+    <string name="phase_completed">Terminé</string>
+    <string name="phase_connection_lost">Connexion perdue</string>
+    <string name="phase_error">Erreur</string>
+
+    <string name="action_open_nfc_settings">Ouvrir les paramètres NFC</string>
+    <string name="action_scan_again">Nouvelle lecture</string>
+    <string name="action_technical_details">Détails techniques</string>
+    <string name="action_export_report">Exporter le rapport</string>
+    <string name="action_settings">Paramètres</string>
+    <string name="action_back">Retour</string>
+    <string name="action_copy">Copier</string>
+    <string name="action_copied">Copié</string>
+    <string name="action_reveal">Afficher</string>
+    <string name="action_hide">Masquer</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_confirm">Confirmer</string>
+    <string name="action_export">Exporter</string>
+    <string name="action_diagnostics">Diagnostic APDU</string>
+    <string name="action_close">Fermer</string>
+
+    <string name="results_title">Résultats de la lecture</string>
+    <string name="field_card_type">Type de carte</string>
+    <string name="field_technology">Technologie NFC</string>
+    <string name="field_iso_standard">Norme ISO</string>
+    <string name="field_manufacturer">Fabricant</string>
+    <string name="field_tag_id">Identifiant du tag</string>
+    <string name="field_atqa">ATQA</string>
+    <string name="field_sak">SAK</string>
+    <string name="field_ats">ATS</string>
+    <string name="field_historical">Octets historiques</string>
+    <string name="field_isodep_status">État ISO-DEP</string>
+    <string name="field_accessible_info">Informations accessibles</string>
+    <string name="field_signature">Signature détectée</string>
+    <string name="value_not_available">Non disponible</string>
+    <string name="value_ats_not_exposed">Non exposé par Android</string>
+
+    <string name="isodep_not_supported">Non pris en charge par ce tag</string>
+    <string name="isodep_established">Communication établie</string>
+    <string name="isodep_failed">Échec de la communication</string>
+    <string name="isodep_lost">Connexion perdue pendant la lecture</string>
+
+    <string name="provenance_verified">Vérifié</string>
+    <string name="provenance_inferred">Déduit</string>
+    <string name="provenance_restricted">Restreint</string>
+
+    <string name="probe_available">Disponible</string>
+    <string name="probe_not_present">Absent</string>
+    <string name="probe_restricted">Accès restreint</string>
+    <string name="probe_error">Erreur</string>
+    <string name="restricted_notice">Les données d’identité protégées (nom, photo, empreintes, adresse, numéros) nécessitent une autorisation officielle et ne sont pas lues par SAMTEX.</string>
+
+    <string name="details_title">Détails techniques</string>
+    <string name="details_section_card">Carte</string>
+    <string name="details_section_findings">Constats</string>
+    <string name="details_section_protocols">Sondes de protocoles publics</string>
+    <string name="details_section_log">Journal de session</string>
+    <string name="details_section_error">Erreur</string>
+    <string name="details_no_result">Aucun résultat pour le moment.</string>
+    <string name="details_hex">HEX</string>
+    <string name="details_ascii">ASCII</string>
+
+    <string name="export_title">Exporter le rapport</string>
+    <string name="export_format">Format</string>
+    <string name="export_include_ids">Inclure les identifiants non masqués</string>
+    <string name="export_ids_warning">Les identifiants non masqués permettent de reconnaître cette carte. Ne les incluez que si nécessaire et si vous faites confiance à la destination.</string>
+    <string name="export_success">Rapport exporté</string>
+    <string name="export_failed">Échec de l’export</string>
+
+    <string name="diag_title">Diagnostic APDU</string>
+    <string name="diag_intro">Seules les commandes ISO/IEC 7816-4 documentées en lecture seule peuvent être envoyées. Les commandes d’authentification, de PIN, de messagerie sécurisée et d’écriture sont bloquées.</string>
+    <string name="diag_authorize">Je possède cette carte ou je suis autorisé à la diagnostiquer</string>
+    <string name="diag_card_required">Présentez d’abord une carte. La console utilise la dernière carte détectée.</string>
+    <string name="diag_card_ready">Carte prête : %1$s</string>
+    <string name="diag_operations">Opérations documentées</string>
+    <string name="diag_custom">APDU personnalisée en lecture seule</string>
+    <string name="diag_custom_hint">ex. 00 A4 04 0C 07 A0 00 00 02 47 10 01</string>
+    <string name="diag_send">Envoyer</string>
+    <string name="diag_decoder">Décodeur de réponse hors ligne</string>
+    <string name="diag_decoder_hint">Réponse hexadécimale avec SW1 SW2, ex. 6A 82</string>
+    <string name="diag_decode">Décoder</string>
+    <string name="diag_output">Sortie</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_privacy">Confidentialité</string>
+    <string name="settings_history_consent">Enregistrer l’historique</string>
+    <string name="settings_history_consent_desc">Enregistre des rapports techniques masqués, chiffrés avec une clé conservée dans l’Android Keystore. Désactivé par défaut.</string>
+    <string name="settings_history_dialog_title">Enregistrer l’historique ?</string>
+    <string name="settings_history_dialog_text">SAMTEX enregistrera des rapports techniques masqués de vos lectures uniquement sur cet appareil, chiffrés avec l’Android Keystore. Vous pouvez les supprimer à tout moment. Désactiver cette option supprime tout l’historique.</string>
+    <string name="settings_redact">Masquer les identifiants à l’écran</string>
+    <string name="settings_redact_desc">Masque les identifiants sauf si vous touchez Afficher.</string>
+    <string name="settings_probe">Sonde standard publique</string>
+    <string name="settings_probe_desc">Après détection, lit uniquement les objets publics ICAO 9303 (EF.CardAccess, présence de l’application eMRTD).</string>
+    <string name="settings_language">Langue</string>
+    <string name="language_system">Langue du système</string>
+    <string name="settings_history">Historique</string>
+    <string name="settings_history_empty">Aucune lecture enregistrée.</string>
+    <string name="settings_history_clear">Supprimer tout l’historique</string>
+    <string name="settings_about">À propos</string>
+    <string name="settings_about_text">SAMTEX %1$s — diagnostic NFC hors ligne. Aucune permission Internet, aucune analyse, aucun compte.</string>
+    <string name="history_report_unavailable">Ce rapport ne peut plus être déchiffré.</string>
+</resources>

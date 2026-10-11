@@ -1,0 +1,161 @@
+name: Android Build
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test, lint and build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle (with dependency caching)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew --stacktrace testDebugUnitTest
+
+      - name: Run Android Lint
+        run: ./gradlew --stacktrace lintDebug
+
+      - name: Build debug APK
+        run: ./gradlew --stacktrace assembleDebug
+
+      - name: Verify APK exists
+        id: apk
+        run: |
+          APK="app/build/outputs/apk/debug/SAMTEX-debug.apk"
+          if [ ! -f "$APK" ]; then
+            echo "::error::Expected APK not found at $APK"
+            ls -R app/build/outputs/apk || true
+            exit 1
+          fi
+          mkdir -p dist
+          cp "$APK" dist/SAMTEX-debug.apk
+          echo "size=$(stat -c%s dist/SAMTEX-debug.apk)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SHA-256 checksum
+        id: checksum
+        working-directory: dist
+        run: |
+          sha256sum SAMTEX-debug.apk > SAMTEX-debug.apk.sha256
+          cat SAMTEX-debug.apk.sha256
+          echo "sha256=$(cut -d' ' -f1 SAMTEX-debug.apk.sha256)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAMTEX-Android-APK
+          path: |
+            dist/SAMTEX-debug.apk
+            dist/SAMTEX-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAMTEX-reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build summary
+        if: always()
+        run: |
+          {
+            echo "## SAMTEX build: ${{ job.status }}"
+            echo ""
+            echo "| Item | Value |"
+            echo "|---|---|"
+            echo "| Commit | \`${GITHUB_SHA::7}\` |"
+            echo "| APK | \`SAMTEX-debug.apk\` (debug-signed, **not a production release**) |"
+            echo "| Size | ${{ steps.apk.outputs.size || 'n/a' }} bytes |"
+            echo "| SHA-256 | \`${{ steps.checksum.outputs.sha256 || 'n/a' }}\` |"
+            echo "| Artifact | \`SAMTEX-Android-APK\` |"
+            echo ""
+            echo "Unit tests use a simulated NFC transport; they do not prove compatibility with physical cards."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Signed release APK (only when signing secrets exist)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HAS_SIGNING: ${{ secrets.SAMTEX_KEYSTORE_BASE64 != '' && secrets.SAMTEX_KEYSTORE_PASSWORD != '' && secrets.SAMTEX_KEY_ALIAS != '' && secrets.SAMTEX_KEY_PASSWORD != '' }}
+    steps:
+      - name: Skip notice
+        if: env.HAS_SIGNING != 'true'
+        run: echo "No release signing secrets configured – release APK is not built. Only the debug APK is available."
+
+      - name: Checkout
+        if: env.HAS_SIGNING == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        if: env.HAS_SIGNING == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        if: env.HAS_SIGNING == 'true'
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        if: env.HAS_SIGNING == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build signed release APK
+        if: env.HAS_SIGNING == 'true'
+        env:
+          SAMTEX_KEYSTORE_PASSWORD: ${{ secrets.SAMTEX_KEYSTORE_PASSWORD }}
+          SAMTEX_KEY_ALIAS: ${{ secrets.SAMTEX_KEY_ALIAS }}
+          SAMTEX_KEY_PASSWORD: ${{ secrets.SAMTEX_KEY_PASSWORD }}
+          KEYSTORE_B64: ${{ secrets.SAMTEX_KEYSTORE_BASE64 }}
+        run: |
+          export SAMTEX_KEYSTORE_PATH="$RUNNER_TEMP/samtex-release.jks"
+          echo "$KEYSTORE_B64" | base64 --decode > "$SAMTEX_KEYSTORE_PATH"
+          chmod +x gradlew
+          ./gradlew --stacktrace assembleRelease
+          rm -f "$SAMTEX_KEYSTORE_PATH"
+          mkdir -p dist
+          cp app/build/outputs/apk/release/SAMTEX-release.apk dist/
+          (cd dist && sha256sum SAMTEX-release.apk > SAMTEX-release.apk.sha256 && cat SAMTEX-release.apk.sha256)
+
+      - name: Upload signed release APK
+        if: env.HAS_SIGNING == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAMTEX-Android-Release-APK
+          path: dist/
+          if-no-files-found: error

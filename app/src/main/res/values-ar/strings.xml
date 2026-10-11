@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagline">قارئ NFC وبطاقات الهوية الذكي</string>
+
+    <string name="nfc_status_enabled">NFC مفعّل</string>
+    <string name="nfc_status_disabled">NFC معطّل</string>
+    <string name="nfc_status_unavailable">NFC غير متوفر</string>
+    <string name="instruction_hold">ضع بطاقة NFC بالقرب من الجهة الخلفية لهاتفك.</string>
+    <string name="hint_nfc_disabled">فعّل NFC لبدء القراءة.</string>
+    <string name="hint_nfc_unavailable">لا يحتوي هذا الجهاز على وحدة NFC.</string>
+    <string name="hint_keep_still">أبقِ البطاقة ثابتة…</string>
+
+    <string name="phase_nfc_unavailable">NFC غير متوفر</string>
+    <string name="phase_nfc_disabled">NFC معطّل</string>
+    <string name="phase_waiting">في انتظار البطاقة</string>
+    <string name="phase_card_detected">تم اكتشاف البطاقة</string>
+    <string name="phase_connecting">جارٍ الاتصال</string>
+    <string name="phase_reading">جارٍ القراءة</string>
+    <string name="phase_completed">اكتملت</string>
+    <string name="phase_connection_lost">انقطع الاتصال</string>
+    <string name="phase_error">خطأ</string>
+
+    <string name="action_open_nfc_settings">فتح إعدادات NFC</string>
+    <string name="action_scan_again">قراءة جديدة</string>
+    <string name="action_technical_details">التفاصيل التقنية</string>
+    <string name="action_export_report">تصدير التقرير</string>
+    <string name="action_settings">الإعدادات</string>
+    <string name="action_back">رجوع</string>
+    <string name="action_copy">نسخ</string>
+    <string name="action_copied">تم النسخ</string>
+    <string name="action_reveal">إظهار</string>
+    <string name="action_hide">إخفاء</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_confirm">تأكيد</string>
+    <string name="action_export">تصدير</string>
+    <string name="action_diagnostics">تشخيص APDU</string>
+    <string name="action_close">إغلاق</string>
+
+    <string name="results_title">نتائج القراءة</string>
+    <string name="field_card_type">نوع البطاقة</string>
+    <string name="field_technology">تقنية NFC</string>
+    <string name="field_iso_standard">معيار ISO</string>
+    <string name="field_manufacturer">الشركة المصنّعة</string>
+    <string name="field_tag_id">معرّف البطاقة</string>
+    <string name="field_atqa">ATQA</string>
+    <string name="field_sak">SAK</string>
+    <string name="field_ats">ATS</string>
+    <string name="field_historical">البايتات التاريخية</string>
+    <string name="field_isodep_status">حالة ISO-DEP</string>
+    <string name="field_accessible_info">المعلومات المتاحة</string>
+    <string name="field_signature">التوقيع المكتشف</string>
+    <string name="value_not_available">غير متاح</string>
+    <string name="value_ats_not_exposed">لا يوفّره نظام Android</string>
+
+    <string name="isodep_not_supported">غير مدعوم في هذه البطاقة</string>
+    <string name="isodep_established">تم إنشاء الاتصال</string>
+    <string name="isodep_failed">فشل الاتصال</string>
+    <string name="isodep_lost">انقطع الاتصال أثناء القراءة</string>
+
+    <string name="provenance_verified">مُتحقَّق منه</string>
+    <string name="provenance_inferred">مُستنتَج</string>
+    <string name="provenance_restricted">مقيّد</string>
+
+    <string name="probe_available">متاح</string>
+    <string name="probe_not_present">غير موجود</string>
+    <string name="probe_restricted">الوصول مقيّد</string>
+    <string name="probe_error">خطأ</string>
+    <string name="restricted_notice">بيانات الهوية المحمية (الاسم، الصورة، البصمات، العنوان، أرقام الهوية) تتطلب تصريحًا رسميًا ولا يقرأها SAMTEX.</string>
+
+    <string name="details_title">التفاصيل التقنية</string>
+    <string name="details_section_card">البطاقة</string>
+    <string name="details_section_findings">النتائج</string>
+    <string name="details_section_protocols">فحوصات البروتوكولات العامة</string>
+    <string name="details_section_log">سجل الجلسة</string>
+    <string name="details_section_error">خطأ</string>
+    <string name="details_no_result">لا توجد نتيجة بعد.</string>
+    <string name="details_hex">HEX</string>
+    <string name="details_ascii">ASCII</string>
+
+    <string name="export_title">تصدير التقرير</string>
+    <string name="export_format">الصيغة</string>
+    <string name="export_include_ids">تضمين المعرّفات غير المحجوبة</string>
+    <string name="export_ids_warning">يمكن استخدام المعرّفات غير المحجوبة للتعرّف على هذه البطاقة. لا تضمّنها إلا عند الحاجة وإذا كنت تثق بالوجهة.</string>
+    <string name="export_success">تم تصدير التقرير</string>
+    <string name="export_failed">فشل التصدير</string>
+
+    <string name="diag_title">تشخيص APDU</string>
+    <string name="diag_intro">يمكن إرسال أوامر ISO/IEC 7816-4 الموثقة للقراءة فقط. أوامر المصادقة ورمز PIN والرسائل الآمنة والكتابة محظورة.</string>
+    <string name="diag_authorize">أنا مالك هذه البطاقة أو مخوّل بتشخيصها</string>
+    <string name="diag_card_required">قرّب بطاقة أولًا. تستخدم وحدة التحكم آخر بطاقة تم اكتشافها.</string>
+    <string name="diag_card_ready">البطاقة جاهزة: %1$s</string>
+    <string name="diag_operations">العمليات الموثقة</string>
+    <string name="diag_custom">أمر APDU مخصص للقراءة فقط</string>
+    <string name="diag_custom_hint">مثال: 00 A4 04 0C 07 A0 00 00 02 47 10 01</string>
+    <string name="diag_send">إرسال</string>
+    <string name="diag_decoder">مفكك الاستجابات دون اتصال</string>
+    <string name="diag_decoder_hint">الاستجابة بصيغة HEX مع SW1 SW2، مثال: 6A 82</string>
+    <string name="diag_decode">فك الترميز</string>
+    <string name="diag_output">المخرجات</string>
+
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_privacy">الخصوصية</string>
+    <string name="settings_history_consent">حفظ سجل القراءات</string>
+    <string name="settings_history_consent_desc">يحفظ تقارير تقنية محجوبة ومشفّرة بمفتاح محفوظ في Android Keystore. معطّل افتراضيًا.</string>
+    <string name="settings_history_dialog_title">حفظ سجل القراءات؟</string>
+    <string name="settings_history_dialog_text">سيحفظ SAMTEX تقارير تقنية محجوبة لقراءاتك على هذا الجهاز فقط، مشفّرة باستخدام Android Keystore. يمكنك حذفها في أي وقت. إيقاف هذا الخيار يحذف السجل بالكامل.</string>
+    <string name="settings_redact">حجب المعرّفات على الشاشة</string>
+    <string name="settings_redact_desc">إخفاء معرّفات البطاقات ما لم تضغط على إظهار.</string>
+    <string name="settings_probe">الفحص القياسي العام</string>
+    <string name="settings_probe_desc">بعد الاكتشاف، قراءة كائنات ICAO 9303 العامة فقط (EF.CardAccess، وجود تطبيق eMRTD).</string>
+    <string name="settings_language">اللغة</string>
+    <string name="language_system">لغة النظام</string>
+    <string name="settings_history">سجل القراءات</string>
+    <string name="settings_history_empty">لا توجد قراءات محفوظة.</string>
+    <string name="settings_history_clear">حذف السجل بالكامل</string>
+    <string name="settings_about">حول التطبيق</string>
+    <string name="settings_about_text">SAMTEX %1$s — تشخيص NFC دون اتصال. بلا إذن إنترنت، بلا تحليلات، بلا حسابات.</string>
+    <string name="history_report_unavailable">لم يعد بالإمكان فك تشفير هذا التقرير.</string>
+</resources>
