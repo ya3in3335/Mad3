@@ -94,7 +94,14 @@ android {
 
     packaging {
         resources {
-            excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "/META-INF/LICENSE*")
+            excludes += setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "/META-INF/LICENSE*",
+                "/META-INF/versions/9/OSGI-INF/MANIFEST.MF",
+                "/META-INF/BCKEY.*",
+                "/META-INF/BC*.SF",
+                "/META-INF/BC*.DSA",
+            )
         }
     }
 }
@@ -126,6 +133,11 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
+
+    // ICAO Doc 9303 secure access (BAC/PACE), LDS decoding and CMS verification.
+    implementation(libs.jmrtd)
+    implementation(libs.bouncycastle.prov)
+    implementation(libs.bouncycastle.pkix)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

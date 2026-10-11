@@ -41,15 +41,16 @@ class IsoDepSessionManager @Inject constructor() {
         transport: ApduTransport,
         logger: SessionLogger?,
         clock: Clock = Clock.SYSTEM,
+        sessionConfig: SessionConfig = config,
         block: suspend (ApduChannel) -> T,
     ): T {
         if (!mutex.tryLock()) {
             throw NfcEngineException(ErrorKind.SESSION_BUSY, "Another card session is already running")
         }
         try {
-            return withTimeout(config.sessionTimeoutMs) {
-                logger?.lifecycle("Connecting ISO-DEP (timeout ${config.transceiveTimeoutMs} ms)")
-                transport.connect(config.transceiveTimeoutMs)
+            return withTimeout(sessionConfig.sessionTimeoutMs) {
+                logger?.lifecycle("Connecting ISO-DEP (timeout ${sessionConfig.transceiveTimeoutMs} ms)")
+                transport.connect(sessionConfig.transceiveTimeoutMs)
                 logger?.lifecycle(
                     "ISO-DEP connected: max transceive ${transport.maxTransceiveLength} bytes, " +
                         "extended length ${if (transport.isExtendedLengthSupported) "supported" else "not supported"}",
@@ -57,7 +58,7 @@ class IsoDepSessionManager @Inject constructor() {
                 block(ApduChannel(transport, logger, clock))
             }
         } catch (e: TimeoutCancellationException) {
-            throw NfcEngineException(ErrorKind.TIMEOUT, "Session exceeded ${config.sessionTimeoutMs} ms", e)
+            throw NfcEngineException(ErrorKind.TIMEOUT, "Session exceeded ${sessionConfig.sessionTimeoutMs} ms", e)
         } finally {
             transport.close()
             logger?.lifecycle("ISO-DEP connection closed")

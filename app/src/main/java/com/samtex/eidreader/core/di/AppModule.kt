@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.samtex.eidreader.core.util.Clock
 import com.samtex.eidreader.data.history.HistoryDatabase
 import com.samtex.eidreader.data.history.ScanHistoryDao
+import com.samtex.eidreader.data.trust.TrustAnchorStore
+import com.samtex.eidreader.icao.pa.TrustAnchorProvider
 import com.samtex.eidreader.security.KeystoreSecureStorage
 import com.samtex.eidreader.security.SecureStorage
 import dagger.Binds
@@ -53,4 +55,8 @@ abstract class SecurityModule {
     @Binds
     @Singleton
     abstract fun bindSecureStorage(impl: KeystoreSecureStorage): SecureStorage
+
+    @Binds
+    @Singleton
+    abstract fun bindTrustAnchors(impl: TrustAnchorStore): TrustAnchorProvider
 }

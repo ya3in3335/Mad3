@@ -14,7 +14,13 @@ import com.samtex.eidreader.domain.model.ScanOptions
 import com.samtex.eidreader.domain.model.ScanPhase
 import com.samtex.eidreader.domain.model.ScanResult
 import com.samtex.eidreader.domain.usecase.DiagnosticOperation
+import com.samtex.eidreader.domain.usecase.ReadIdentityUseCase
 import com.samtex.eidreader.domain.usecase.RunDiagnosticUseCase
+import com.samtex.eidreader.icao.IdentityReadResult
+import com.samtex.eidreader.icao.ReadOutcome
+import com.samtex.eidreader.icao.ReadStep
+import com.samtex.eidreader.icao.access.AccessCredentials
+import com.samtex.eidreader.icao.reader.ReadOptions
 import com.samtex.eidreader.domain.usecase.ScanCardUseCase
 import com.samtex.eidreader.nfc.apdu.CommandApdu
 import com.samtex.eidreader.nfc.discovery.NfcAvailability
@@ -27,6 +33,8 @@ import com.samtex.eidreader.security.PrivacyManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,6 +56,19 @@ data class ScanUiState(
 
 data class ConsoleOutcome(val exchanges: List<ApduExchange>, val error: DiagnosticError?)
 
+enum class IdentityPhase { IDLE, WAITING_FOR_CARD, READING, FINISHED }
+
+/** Identity session state. Personal data stays hidden until [revealed] is set by the holder. */
+data class IdentityUiState(
+    val phase: IdentityPhase = IdentityPhase.IDLE,
+    val step: ReadStep? = null,
+    val result: IdentityReadResult? = null,
+    val revealed: Boolean = false,
+    val portraitRevealed: Boolean = false,
+)
+
+private class PendingRead(val credentials: AccessCredentials, val options: ReadOptions, var retriedAfterRemoval: Boolean = false)
+
 /**
  * Application-wide coordinator between Reader Mode callbacks, the scan use case, history and
  * the diagnostics console. Guarantees that only one card operation runs at a time.
@@ -58,6 +79,7 @@ class ScanController @Inject constructor(
     private val snapshotReader: TagSnapshotReader,
     private val scanCard: ScanCardUseCase,
     private val runDiagnostic: RunDiagnosticUseCase,
+    private val readIdentity: ReadIdentityUseCase,
     private val settings: SettingsRepository,
     private val history: HistoryRepository,
     private val errorAnalyzer: ErrorAnalyzer,
@@ -74,6 +96,13 @@ class ScanController @Inject constructor(
     val state: StateFlow<ScanUiState> = _state.asStateFlow()
 
     private val consoleLogger = SessionLogger(clock, privacy)
+
+    private val _identity = MutableStateFlow(IdentityUiState())
+    val identity: StateFlow<IdentityUiState> = _identity.asStateFlow()
+
+    @Volatile
+    private var pending: PendingRead? = null
+    private var pendingExpiry: Job? = null
 
     init {
         scope.launch {
@@ -102,7 +131,7 @@ class ScanController @Inject constructor(
 
     /** Called on the NFC binder thread by Reader Mode. */
     fun onTagDiscovered(tag: Tag) {
-        // Never start a second session while one is running (scan or console).
+        // Never start a second session while one is running (scan, identity read or console).
         if (!busy.compareAndSet(false, true)) return
         val card = try {
             AndroidDiscoveredCard(tag, snapshotReader.read(tag))
@@ -112,13 +141,97 @@ class ScanController @Inject constructor(
             return
         }
         currentCard = card
+        val identityRequested = pending != null
         scope.launch(Dispatchers.IO) {
             try {
-                performScan(card)
+                if (identityRequested) performIdentityRead(card, cardWasAlreadyPresent = false) else performScan(card)
             } finally {
                 busy.set(false)
             }
         }
+    }
+
+    // ---- Identity reading -------------------------------------------------------------------
+
+    /**
+     * Starts an authorized identity read. If a card is already in the field it is used at once;
+     * otherwise the next detected card is read. Unused credentials are wiped after [PENDING_TTL_MS].
+     */
+    fun requestIdentityRead(credentials: AccessCredentials, options: ReadOptions) {
+        endIdentitySession()
+        when (_state.value.nfc) {
+            NfcAvailability.UNSUPPORTED -> {
+                credentials.close()
+                _identity.value = IdentityUiState(IdentityPhase.FINISHED, result = IdentityReadResult.failure(ReadOutcome.NFC_NOT_AVAILABLE))
+                return
+            }
+            NfcAvailability.DISABLED -> {
+                credentials.close()
+                _identity.value = IdentityUiState(IdentityPhase.FINISHED, result = IdentityReadResult.failure(ReadOutcome.NFC_DISABLED))
+                return
+            }
+            NfcAvailability.ENABLED -> Unit
+        }
+        pending = PendingRead(credentials, options)
+        _identity.value = IdentityUiState(IdentityPhase.WAITING_FOR_CARD)
+        pendingExpiry = scope.launch {
+            delay(PENDING_TTL_MS)
+            cancelIdentityRead()
+        }
+        val card = currentCard ?: return
+        if (busy.compareAndSet(false, true)) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    performIdentityRead(card, cardWasAlreadyPresent = true)
+                } finally {
+                    busy.set(false)
+                }
+            }
+        }
+    }
+
+    private suspend fun performIdentityRead(card: DiscoveredCard, cardWasAlreadyPresent: Boolean) {
+        val request = pending ?: return
+        _identity.value = IdentityUiState(IdentityPhase.READING, ReadStep.CONNECTING)
+        val result = try {
+            readIdentity(card, request.credentials, request.options) { step -> _identity.update { it.copy(step = step) } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            IdentityReadResult.failure(ReadOutcome.PROTOCOL_UNSUPPORTED, e.javaClass.simpleName)
+        }
+        // A handle to a card that was lifted in the meantime is stale: wait once for a fresh tap.
+        if (result.outcome == ReadOutcome.CARD_REMOVED && cardWasAlreadyPresent && !request.retriedAfterRemoval) {
+            request.retriedAfterRemoval = true
+            currentCard = null
+            _identity.value = IdentityUiState(IdentityPhase.WAITING_FOR_CARD)
+            return
+        }
+        pending = null
+        pendingExpiry?.cancel()
+        request.credentials.close()
+        _identity.value = IdentityUiState(IdentityPhase.FINISHED, result = result)
+    }
+
+    fun revealIdentity(reveal: Boolean) = _identity.update { it.copy(revealed = reveal, portraitRevealed = if (reveal) it.portraitRevealed else false) }
+
+    fun revealPortrait(reveal: Boolean) = _identity.update { it.copy(portraitRevealed = reveal && it.revealed) }
+
+    /** Abandons a pending read and wipes the credentials. */
+    fun cancelIdentityRead() {
+        pending?.credentials?.close()
+        pending = null
+        pendingExpiry?.cancel()
+        if (_identity.value.phase == IdentityPhase.WAITING_FOR_CARD) _identity.value = IdentityUiState()
+    }
+
+    /** Ends the session: wipes credentials, personal data and the portrait from memory. */
+    fun endIdentitySession() {
+        pending?.credentials?.close()
+        pending = null
+        pendingExpiry?.cancel()
+        _identity.value.result?.record?.wipe()
+        _identity.value = IdentityUiState()
     }
 
     private suspend fun performScan(card: DiscoveredCard) {
@@ -161,6 +274,10 @@ class ScanController @Inject constructor(
         withCard { card -> listOf(runDiagnostic.runCustom(card, command, consoleLogger)) }
 
     fun consoleLog(): List<LogEntry> = consoleLogger.snapshot()
+
+    private companion object {
+        const val PENDING_TTL_MS = 120_000L
+    }
 
     private suspend fun withCard(block: suspend (DiscoveredCard) -> List<ApduExchange>): ConsoleOutcome {
         val card = currentCard

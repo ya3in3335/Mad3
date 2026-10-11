@@ -60,6 +60,6 @@ class RunDiagnosticUseCase @Inject constructor(
     private suspend fun <T> withChannel(card: DiscoveredCard, logger: SessionLogger, block: suspend (ApduChannel) -> T): T {
         val transport = card.openIsoDepTransport()
             ?: throw NfcEngineException(ErrorKind.UNSUPPORTED_TAG, "The current tag does not support ISO-DEP")
-        return sessionManager.withSession(transport, logger, clock, block)
+        return sessionManager.withSession(transport, logger, clock, block = block)
     }
 }
