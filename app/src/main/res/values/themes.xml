@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.Samtex" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.Samtex" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/samtex_background</item>
         <item name="colorPrimary">@color/samtex_primary</item>
         <item name="colorAccent">@color/samtex_accent</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 </resources>

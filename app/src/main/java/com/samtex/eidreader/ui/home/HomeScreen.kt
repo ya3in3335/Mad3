@@ -72,6 +72,7 @@ fun HomeScreen(
     onOpenDetails: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenNfcSettings: () -> Unit,
+    onReadIdentity: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -123,6 +124,15 @@ fun HomeScreen(
                 Button(onClick = onOpenNfcSettings, shape = RoundedCornerShape(16.dp)) {
                     Text(stringResource(R.string.action_open_nfc_settings))
                 }
+            }
+            if (state.nfc != NfcAvailability.UNSUPPORTED) {
+                Spacer(Modifier.height(20.dp))
+                Button(
+                    onClick = onReadIdentity,
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Electric, contentColor = SamtexColors.OnElectric),
+                ) { Text(stringResource(R.string.action_read_identity)) }
             }
             state.error?.takeIf { state.result == null }?.let { error ->
                 Spacer(Modifier.height(16.dp))
@@ -234,18 +244,29 @@ private fun ResultsPanel(
                     null
                 },
             )
-            InfoRow(stringResource(R.string.field_atqa), c.atqa?.hex ?: notAvailable, mono = c.atqa != null)
-            InfoRow(stringResource(R.string.field_sak), c.sak?.hex ?: notAvailable, mono = c.sak != null)
-            if (s.isoDep != null) {
-                InfoRow(stringResource(R.string.field_ats), stringResource(R.string.value_ats_not_exposed), Provenance.RESTRICTED)
+            if (c.atqb != null) {
+                val b = c.atqb
+                InfoRow(
+                    stringResource(R.string.field_atqb),
+                    s.nfcB!!.protocolInfo.hex(" ") + "\n" +
+                        (if (b.iso14443_4Compliant) "ISO/IEC 14443-4" else "—") + (b.maxFrameSize?.let { " · $it B" } ?: ""),
+                    Provenance.VERIFIED,
+                    mono = true,
+                )
+            } else {
+                InfoRow(stringResource(R.string.field_atqa), c.atqa?.hex ?: notAvailable, mono = c.atqa != null)
+                InfoRow(stringResource(R.string.field_sak), c.sak?.hex ?: notAvailable, mono = c.sak != null)
             }
-            val hist = c.historicalBytes
-            InfoRow(
-                stringResource(R.string.field_historical),
-                if (hist.raw.isEmpty()) notAvailable else hist.raw.hex(" ") + (hist.ascii?.let { "\n\"$it\"" } ?: ""),
-                if (hist.raw.isEmpty()) null else Provenance.VERIFIED,
-                mono = !hist.raw.isEmpty(),
-            )
+            if (s.isoDep != null && s.nfcA != null) {
+                InfoRow(stringResource(R.string.field_ats), stringResource(R.string.value_ats_not_exposed), Provenance.RESTRICTED)
+                val hist = c.historicalBytes
+                InfoRow(
+                    stringResource(R.string.field_historical),
+                    if (hist.raw.isEmpty()) notAvailable else hist.raw.hex(" ") + (hist.ascii?.let { "\n\"$it\"" } ?: ""),
+                    if (hist.raw.isEmpty()) null else Provenance.VERIFIED,
+                    mono = !hist.raw.isEmpty(),
+                )
+            }
             InfoRow(
                 stringResource(R.string.field_isodep_status),
                 stringResource(isoDepLabel(result.isoDep.status)),
@@ -298,7 +319,7 @@ private fun ResultsPanel(
             onClick = onScanAgain,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Primary),
+            colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Electric, contentColor = SamtexColors.OnElectric),
             enabled = state.phase !in setOf(ScanPhase.CARD_DETECTED, ScanPhase.CONNECTING, ScanPhase.READING),
         ) { Text(stringResource(R.string.action_scan_again)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

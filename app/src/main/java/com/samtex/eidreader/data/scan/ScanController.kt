@@ -104,6 +104,9 @@ class ScanController @Inject constructor(
     private var pending: PendingRead? = null
     private var pendingExpiry: Job? = null
 
+    @Volatile
+    private var identityJob: Job? = null
+
     init {
         scope.launch {
             discovery.availability.collect { availability -> onAvailability(availability) }
@@ -142,13 +145,14 @@ class ScanController @Inject constructor(
         }
         currentCard = card
         val identityRequested = pending != null
-        scope.launch(Dispatchers.IO) {
+        val job = scope.launch(Dispatchers.IO) {
             try {
                 if (identityRequested) performIdentityRead(card, cardWasAlreadyPresent = false) else performScan(card)
             } finally {
                 busy.set(false)
             }
         }
+        if (identityRequested) identityJob = job
     }
 
     // ---- Identity reading -------------------------------------------------------------------
@@ -180,7 +184,7 @@ class ScanController @Inject constructor(
         }
         val card = currentCard ?: return
         if (busy.compareAndSet(false, true)) {
-            scope.launch(Dispatchers.IO) {
+            identityJob = scope.launch(Dispatchers.IO) {
                 try {
                     performIdentityRead(card, cardWasAlreadyPresent = true)
                 } finally {
@@ -207,6 +211,11 @@ class ScanController @Inject constructor(
             _identity.value = IdentityUiState(IdentityPhase.WAITING_FOR_CARD)
             return
         }
+        if (pending !== request) {
+            // The session was ended or replaced while reading: discard the result.
+            result.record?.wipe()
+            return
+        }
         pending = null
         pendingExpiry?.cancel()
         request.credentials.close()
@@ -217,16 +226,22 @@ class ScanController @Inject constructor(
 
     fun revealPortrait(reveal: Boolean) = _identity.update { it.copy(portraitRevealed = reveal && it.revealed) }
 
-    /** Abandons a pending read and wipes the credentials. */
+    /** Abandons a pending or running read and wipes the credentials. */
     fun cancelIdentityRead() {
+        identityJob?.cancel()
+        identityJob = null
         pending?.credentials?.close()
         pending = null
         pendingExpiry?.cancel()
-        if (_identity.value.phase == IdentityPhase.WAITING_FOR_CARD) _identity.value = IdentityUiState()
+        if (_identity.value.phase == IdentityPhase.WAITING_FOR_CARD || _identity.value.phase == IdentityPhase.READING) {
+            _identity.value = IdentityUiState()
+        }
     }
 
     /** Ends the session: wipes credentials, personal data and the portrait from memory. */
     fun endIdentitySession() {
+        identityJob?.cancel()
+        identityJob = null
         pending?.credentials?.close()
         pending = null
         pendingExpiry?.cancel()

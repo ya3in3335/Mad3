@@ -9,6 +9,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.samtex.eidreader.ui.diagnostics.DiagnosticsScreen
 import com.samtex.eidreader.ui.home.HomeScreen
+import com.samtex.eidreader.ui.identity.AccessScreen
+import com.samtex.eidreader.ui.identity.IdentityScreen
 import com.samtex.eidreader.ui.results.ResultsScreen
 import com.samtex.eidreader.ui.settings.SettingsScreen
 
@@ -17,6 +19,8 @@ object Routes {
     const val DETAILS = "details"
     const val DIAGNOSTICS = "diagnostics"
     const val SETTINGS = "settings"
+    const val ACCESS = "access"
+    const val IDENTITY = "identity"
 }
 
 @Composable
@@ -34,6 +38,25 @@ fun SamtexNavHost(onOpenNfcSettings: () -> Unit) {
                 onOpenDetails = { nav.navigate(Routes.DETAILS) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                 onOpenNfcSettings = onOpenNfcSettings,
+                onReadIdentity = { nav.navigate(Routes.ACCESS) },
+            )
+        }
+        composable(Routes.ACCESS) {
+            AccessScreen(
+                viewModel = hiltViewModel(),
+                onBack = { nav.popBackStack() },
+                onStarted = {
+                    nav.navigate(Routes.IDENTITY) { popUpTo(Routes.ACCESS) { inclusive = true } }
+                },
+            )
+        }
+        composable(Routes.IDENTITY) {
+            IdentityScreen(
+                viewModel = hiltViewModel(),
+                onBack = { nav.popBackStack(Routes.HOME, inclusive = false) },
+                onRetry = {
+                    nav.navigate(Routes.ACCESS) { popUpTo(Routes.HOME) }
+                },
             )
         }
         composable(Routes.DETAILS) {

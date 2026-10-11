@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      Reported inside the third-party bcpkix jar (a BouncyCastle TLS helper), not in SAMTEX code.
+      SAMTEX has no INTERNET permission and never opens TLS connections, so this class is unreachable.
+      Scoped to that jar only: the check stays active for SAMTEX sources.
+    -->
+    <issue id="TrustAllX509TrustManager">
+        <ignore path="**/bcpkix-jdk18on-*.jar" />
+    </issue>
+</lint>

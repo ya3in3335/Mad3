@@ -110,7 +110,7 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel, onBack: () -> Unit) {
                         onClick = viewModel::sendCustom,
                         enabled = enabled && state.customInput.isNotBlank(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Primary),
+                        colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Electric, contentColor = SamtexColors.OnElectric),
                     ) { Text(stringResource(R.string.diag_send)) }
                 }
             }
@@ -130,7 +130,7 @@ fun DiagnosticsScreen(viewModel: DiagnosticsViewModel, onBack: () -> Unit) {
                         onClick = viewModel::decode,
                         enabled = state.decoderInput.isNotBlank(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Primary),
+                        colors = ButtonDefaults.buttonColors(containerColor = SamtexColors.Electric, contentColor = SamtexColors.OnElectric),
                     ) { Text(stringResource(R.string.diag_decode)) }
                     state.decoderOutput?.let { SelectionContainer { Text(it, style = MonoStyle) } }
                 }

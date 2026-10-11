@@ -1,5 +1,7 @@
 package com.samtex.eidreader.ui.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +40,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.samtex.eidreader.BuildConfig
 import com.samtex.eidreader.R
+import com.samtex.eidreader.data.trust.ImportResult
 import com.samtex.eidreader.ui.components.SamtexTopBar
 import com.samtex.eidreader.ui.components.SectionCard
 import com.samtex.eidreader.ui.components.SectionTitle
@@ -51,6 +54,11 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val history by viewModel.historyItems.collectAsStateWithLifecycle()
     val openReport by viewModel.openReport.collectAsStateWithLifecycle()
+    val anchors by viewModel.anchors.collectAsStateWithLifecycle()
+    val importResult by viewModel.importResult.collectAsStateWithLifecycle()
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(viewModel::importCertificate)
+    }
     var showConsent by rememberSaveable { mutableStateOf(false) }
     val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
 
@@ -85,7 +93,45 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
                     )
                 }
             }
+            item {
+                SectionCard {
+                    Text(stringResource(R.string.settings_identity_privacy), style = MaterialTheme.typography.bodySmall, color = SamtexColors.Muted)
+                }
+            }
             item { LanguageSection() }
+            item {
+                SectionCard {
+                    SectionTitle(stringResource(R.string.settings_trust))
+                    Text(stringResource(R.string.settings_trust_desc), style = MaterialTheme.typography.bodySmall, color = SamtexColors.Muted)
+                    if (anchors.isEmpty()) {
+                        Text(stringResource(R.string.settings_trust_empty), style = MaterialTheme.typography.bodySmall, color = SamtexColors.Warning)
+                    }
+                    anchors.forEach { a ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(a.subject, style = MaterialTheme.typography.bodySmall)
+                                Text("SHA-256 " + a.fingerprint.take(16) + "… · " + dateFormat.format(a.notAfter), style = MonoStyle, color = SamtexColors.Muted)
+                            }
+                            TextButton(onClick = { viewModel.removeAnchor(a.fingerprint) }) {
+                                Text(stringResource(R.string.settings_trust_remove), color = SamtexColors.Error)
+                            }
+                        }
+                    }
+                    TextButton(onClick = { importLauncher.launch(arrayOf("application/x-x509-ca-cert", "application/pkix-cert", "application/x-pem-file", "application/octet-stream", "*/*")) }) {
+                        Text(stringResource(R.string.settings_trust_import))
+                    }
+                    importResult?.let { r ->
+                        Text(
+                            when (r) {
+                                is ImportResult.Imported -> stringResource(R.string.settings_trust_imported, r.added, r.rejectedNonCa)
+                                ImportResult.NotACertificate -> stringResource(R.string.settings_trust_invalid)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (r is ImportResult.Imported && r.added > 0) SamtexColors.Success else SamtexColors.Warning,
+                        )
+                    }
+                }
+            }
             item {
                 SectionCard {
                     SectionTitle(stringResource(R.string.settings_history))
@@ -162,7 +208,7 @@ private fun SwitchRow(title: String, description: String, checked: Boolean, onCh
         Switch(
             checked = checked,
             onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(checkedTrackColor = SamtexColors.Accent),
+            colors = SwitchDefaults.colors(checkedTrackColor = SamtexColors.Electric),
         )
     }
 }

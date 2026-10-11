@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -28,7 +29,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         setContent {
             SamtexTheme {
                 SamtexNavHost(onOpenNfcSettings = ::openNfcSettings)
@@ -53,6 +57,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /** Personal data and pending credentials never outlive the foreground session. */
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) controller.endIdentitySession()
     }
 
     private fun openNfcSettings() {

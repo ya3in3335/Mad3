@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="samtex_background">#FFFFFF</color>
-    <color name="samtex_primary">#111827</color>
-    <color name="samtex_accent">#10B981</color>
+    <color name="samtex_background">#070D1F</color>
+    <color name="samtex_primary">#2F7BFF</color>
+    <color name="samtex_accent">#38BDF8</color>
 </resources>
