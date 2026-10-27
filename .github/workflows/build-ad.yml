@@ -55,7 +55,7 @@ jobs:
           RATE: ${{ github.event.inputs.rate || '-8%' }}
         run: |
           for i in 1 2 3; do
-            python make_voice.py --voice "$VOICE" --pitch="$PITCH" --rate="$RATE" && break
+            python make_voice.py --voice "$VOICE" --pitch="$PITCH" --rate="$RATE" 2>&1 | tee build/voice_report.txt && test -f build/appnova_ad_final.mp4 && break
             echo "edge-tts attempt $i failed, retrying..."; sleep 10
           done
           test -f build/appnova_ad_final.mp4
@@ -72,8 +72,11 @@ jobs:
         run: |
           mkdir -p output
           cp build/appnova_ad_final.mp4 output/Appnova_ad_final.mp4
+          mkdir -p output/voice
+          cp build/voice/*.mp3 output/voice/
+          cp build/voice_report.txt output/voice/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add output/Appnova_ad_final.mp4
+          git add output/Appnova_ad_final.mp4 output/voice
           git commit -m "Build final ad with edge-tts voice [skip ci]" || echo "nothing to commit"
           git push
