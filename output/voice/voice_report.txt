@@ -1,0 +1,17 @@
+Generating voice with en-US-ChristopherNeural (rate -8%, pitch -14Hz) ...
+  [01] Your idea... deserves more than a dream.
+  [02] Web apps. Android apps. Built to perform.
+  [03] Fast. Secure. Powerful.
+  [04] From the first line of code... to millions of users.
+  [05] Appnova.
+  [06] We build what's next.
+  [07] Start your project today.
+  01:  0.55s + 3.72s  <-- overlaps next line, use a faster --rate
+  02:  3.45s + 6.10s  <-- overlaps next line, use a faster --rate
+  03:  7.15s + 5.14s  <-- overlaps next line, use a faster --rate
+  04: 10.25s + 4.42s
+  05: 14.70s + 1.90s
+  06: 16.70s + 2.47s
+  07: 19.70s + 2.66s
+Mixing ...
+Done -> /home/runner/work/Mad3/Mad3/build/appnova_ad_final.mp4
