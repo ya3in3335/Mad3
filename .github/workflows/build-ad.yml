@@ -1,0 +1,79 @@
+name: Build Appnova ad (video + edge-tts voice)
+
+on:
+  push:
+    branches: [appnova-ad]
+    paths-ignore:
+      - "output/**"
+      - "README.md"
+  workflow_dispatch:
+    inputs:
+      voice:
+        description: "edge-tts voice"
+        default: "en-US-ChristopherNeural"
+      pitch:
+        description: "Voice pitch"
+        default: "-14Hz"
+      rate:
+        description: "Voice rate"
+        default: "-8%"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-ad
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install numpy scipy pillow edge-tts
+
+      - name: Render motion graphics
+        run: python render.py
+
+      - name: Sound design (music + SFX)
+        run: python sound_design.py
+
+      - name: Voice-over with edge-tts + final mix
+        env:
+          VOICE: ${{ github.event.inputs.voice || 'en-US-ChristopherNeural' }}
+          PITCH: ${{ github.event.inputs.pitch || '-14Hz' }}
+          RATE: ${{ github.event.inputs.rate || '-8%' }}
+        run: |
+          for i in 1 2 3; do
+            python make_voice.py --voice "$VOICE" --pitch="$PITCH" --rate="$RATE" && break
+            echo "edge-tts attempt $i failed, retrying..."; sleep 10
+          done
+          test -f build/appnova_ad_final.mp4
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appnova-ad-final
+          path: |
+            build/appnova_ad_final.mp4
+            build/voice/*.mp3
+
+      - name: Commit final video to the branch
+        run: |
+          mkdir -p output
+          cp build/appnova_ad_final.mp4 output/Appnova_ad_final.mp4
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/Appnova_ad_final.mp4
+          git commit -m "Build final ad with edge-tts voice [skip ci]" || echo "nothing to commit"
+          git push

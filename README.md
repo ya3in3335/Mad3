@@ -47,3 +47,9 @@ python make_voice.py --skip-tts                       # إعادة الدمج ب
 - نص التعليق الصوتي وتوقيته: قائمة `VO` في `timeline.py`
 - نصوص الشاشة: دوال المشاهد في `render.py` (`sc_idea`, `sc_devices`, `sc_punch`, `sc_scale`, `sc_logo`, `sc_cta`)
 - الشعار: `assets/logo.png` (الرمز والكتابة يُقصّان منه تلقائيًا)
+
+## البناء التلقائي على GitHub (بدون تثبيت أي شيء)
+
+الملف `.github/workflows/build-ad.yml` يصنع الفيديو والموسيقى والصوت ويدمجها على خوادم GitHub عند كل تعديل في هذا الفرع، ثم يحفظ النتيجة في `output/Appnova_ad_final.mp4`.
+
+لتجربة صوت آخر: تبويب **Actions** ← **Build Appnova ad** ← **Run workflow** واختر الصوت والطبقة والسرعة.
